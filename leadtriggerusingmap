@@ -1,0 +1,30 @@
+trigger hic_leadtrigger2 on Lead (before update,after update) {
+    if(trigger.isbefore && trigger.isupdate){
+        for(lead lobj:trigger.new){
+        if(trigger.newmap.get(lobj.Id).email!=null && trigger.newmap.get(lobj.id).email!=trigger.oldmap.get(lobj.id).email){
+            lobj.LastName='updated 2023';
+        } 
+    }
+    }
+    if(trigger.isafter && trigger.isupdate){
+       map<id,Lead> leadmap=new map<id,Lead>();
+       
+        for(Lead lobj1:trigger.new){
+            if(trigger.newmap.get(lobj1.Id).email!=null && trigger.newmap.get(lobj1.id).email!=trigger.oldmap.get(lobj1.id).email){
+                 leadmap.put(lobj1.id, lobj1);
+            }
+        }
+         system.debug('leadmap'+leadmap.size());
+        list<lead> leadlist=new list<Lead>();
+        leadlist=[select id,name,lastname from lead where id =:leadmap.keySet()];
+            for(Lead le:leadlist){
+               le.LastName='***2023'; 
+            }
+            system.debug('leadlist======='+leadlist);
+            if(leadlist.size()>0){
+                update leadlist;
+            }
+        system.debug('leadlist'+leadlist);
+    }
+    
+}
