@@ -1,0 +1,61 @@
+trigger:
+trigger hic_opportunity2 on Opportunity (after insert,after update) {
+   if(trigger.isafter && trigger.isinsert){
+        for(Opportunity objopp:trigger.new){
+            system.debug('objopp id'+objopp.Id);
+            system.debug('record type'+objopp.RecordTypeId);
+            hic_opportunity_handler handler=new hic_opportunity_handler();
+        handler.clonebusinessrecordinsert(trigger.new);
+        }
+    }
+
+     if(trigger.isafter && trigger.isupdate){ 
+       for(Opportunity objopp1:trigger.new){
+           system.debug('in update====');
+            system.debug('objopp id'+objopp1.Id);
+            system.debug('record type'+objopp1.RecordTypeId);
+            hic_opportunity_handler handler1=new hic_opportunity_handler();
+             handler1.clonebusinessrecordupdt(trigger.new, trigger.oldmap);
+        } 
+    }
+}
+
+
+handler:
+public class hic_opportunity_handler {
+        list<opportunity> createopp=new list<opportunity>();
+        id businessrecordid=[select id,name from RecordType where name='New Business'].id;
+        //system.debug('businessrecordid'+businessrecordid);
+        id renewalrecordid=[select id,name from RecordType where name='Renewal'].id;
+        //system.debug('businessrecordid'+renewalrecordid);
+    public void clonebusinessrecordinsert(list<opportunity> newlist){
+        for(opportunity oppobj:newlist){
+            if(oppobj.RecordTypeId==businessrecordid && oppobj.StageName=='Closed Won'  ){
+                opportunity obj=oppobj.clone();
+                obj.RecordTypeId=renewalrecordid;
+                obj.StageName='Renewal';
+                obj.Name=oppobj.Name+'-Renewal';
+                obj.CloseDate=oppobj.CloseDate+30;
+                createopp.add(obj);
+            }
+        }
+        if(createopp.size()>0){
+      database.insert(createopp);  
+    }
+    }
+   public void clonebusinessrecordupdt(list<opportunity> newlist, map<id,opportunity> oldmap){
+            for(opportunity oppobj1:newlist){
+                if(oppobj1.StageName!=oldmap.get(oppobj1.id).StageName && oppobj1.RecordTypeId==businessrecordid && oppobj1.StageName=='Closed Won' ){
+                    opportunity obj=oppobj1.clone();
+                obj.RecordTypeId=renewalrecordid;
+                obj.StageName='Renewal';
+                obj.Name=oppobj1.Name+'-Renewal';
+                obj.CloseDate=oppobj1.CloseDate+30;
+                createopp.add(obj);
+                }
+            }
+       if(createopp.size()>0){
+      database.insert(createopp);  
+       }
+       }
+}
