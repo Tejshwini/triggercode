@@ -1,0 +1,39 @@
+trigger:
+trigger insertcampaignmem on Lead (after insert) {
+    if(trigger.isafter && trigger.isinsert){
+        insertcampaignmem_handler obj=new insertcampaignmem_handler();
+        obj.insertcammember(trigger.new);
+    }
+}
+
+handler:
+public class insertcampaignmem_handler {
+    public void insertcammember(list<Lead> newlist){
+        list<CampaignMember> newinsertlist=new list<CampaignMember>();
+        list<Task> tasklist=new  list<Task>();
+    id campaignnid=[select id,Name from Campaign where Name='sunbun concert'].id;
+      if(campaignnid!=null){
+          for(Lead lobj:newlist){
+            if(lobj.LeadSource=='Web' ){
+                CampaignMember newmember=new CampaignMember();
+                    newmember.CampaignId=campaignnid;
+                    newmember.LeadId=lobj.Id;
+                    newmember.Status='ticket taken';
+                    newinsertlist.add(newmember);
+                    Task createtask=new Task();
+                    createtask.Subject='send email details to customer';
+                    createtask.ActivityDate=system.today()+7;
+                    createtask.WhoId=lobj.Id;
+                    tasklist.add(createtask);  
+                }
+            }
+        }
+        if(newinsertlist.size()>0){
+            database.insert(newinsertlist,false);
+            database.insert (tasklist,false);
+            for(CampaignMember obj:newinsertlist){
+                system.debug('new member'+obj.id+'status'+obj.Status);
+            }
+        }
+    }
+}
