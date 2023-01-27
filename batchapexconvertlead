@@ -1,0 +1,29 @@
+public class convertallleads implements database.Batchable <sObject> {
+     
+    public database.QueryLocator start(database.BatchableContext bc){
+         return database.getQueryLocator([select id,lastname,status from Lead where status!='Closed - Converted']);
+    }
+    public void execute(database.BatchableContext bc,list<Lead> leadlist){
+       list<Lead> l_list=new list<Lead>();
+        list<database.LeadConvert> lead_con=new list<database.LeadConvert>();
+        if(leadlist.size()>0){
+            for(Lead lobj:leadlist){
+                lobj.Status='Closed - Converted';
+                database.LeadConvert lc=new  database.LeadConvert();
+               lc.setDoNotCreateOpportunity(false);
+               lc.setLeadId(lobj.Id);
+               lc.setConvertedStatus(lobj.Status);
+                lead_con.add(lc);
+            }
+        }
+        database.convertLead(lead_con);
+        
+    }
+    public void finish(database.BatchableContext bc){
+        
+    }
+}
+
+
+execute:convertallleads obj=new convertallleads();
+id batch=database.executeBatch(obj);
