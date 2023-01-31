@@ -1,0 +1,63 @@
+trigger:
+trigger hic_leadtrigger3 on Lead (after insert,after update) {
+    if(trigger.isafter && trigger.isinsert){
+       hic_leadtrigger3handler obj=new hic_leadtrigger3handler();
+        obj.leadconvoncheck(trigger.new,null);
+       
+    }
+    if(trigger.isafter && trigger.isupdate){
+        hic_leadtrigger3handler obj=new hic_leadtrigger3handler();
+        obj.leadconvoncheck(trigger.new,trigger.oldmap);
+    }
+}
+handler:
+public class hic_leadtrigger3handler {
+    map<id,string> senmap=new map<id,string>();
+    public void leadconvoncheck(list<Lead> leadlist,map<id,Lead> oldmap)
+    {
+           list<database.LeadConvert> leadcon=new list<database.LeadConvert>();
+        for(Lead lobj:leadlist){
+            if((lobj.leadconvert__c==true && oldmap==null) ||(lobj.leadconvert__c==true && oldmap.get(lobj.id).leadconvert__c!=lobj.leadconvert__c )){
+                database.LeadConvert lc=new database.LeadConvert();
+                lc.setLeadId(lobj.id);
+                lc.setDoNotCreateOpportunity(false);
+                Leadstatus convertstatus=[select Id,MasterLabel from Leadstatus where IsConverted=true limit 1];
+                lc.setConvertedStatus(convertstatus.MasterLabel);
+                leadcon.add(lc);
+            }
+        }
+      if(leadcon.size()>0){
+           list<database.LeadConvertResult> result=  database.convertLead(leadcon,false);
+        for(database.LeadConvertResult re:result){
+            if(re.isSuccess()==true){
+                system.debug('in LeadConvertResult'+re);
+                senmap.put(re.getLeadId(),re.getAccountId()+'-'+re.getContactId());
+            storelid(senmap);
+            }
+        }
+        }
+    }
+    @future
+      public static void storelid(map<id,string> recemap) 
+     {
+         list<string> mapid=new list<string>();
+         id accid;
+         id  con_id;
+         id lead_id;
+         for(id l_idreceive:recemap.keyset()){
+             mapid = recemap.get(l_idreceive).split('-');
+             system.debug('mapid++++'+mapid);
+             lead_id=l_idreceive;
+              accid = mapid[0];
+             con_id=mapid[1];
+         }
+         account aobj=new account();
+         aobj.id=accid;
+         aobj.convertedleadid__c=lead_id;
+         update aobj;
+         Contact cobj=new Contact();
+         cobj.Id=con_id;
+             cobj.convertedleadid__c=lead_id;
+         update cobj;
+     }
+}
