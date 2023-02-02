@@ -1,0 +1,52 @@
+public class createdefaultAccount {
+   public void createacc()
+    {
+        list<id> acclist=new list<id>();
+        list<Account> acccreate=new list<Account>();
+        Account aobj=new Account();
+        aobj.Name='default1 Account';
+        insert aobj;
+        acclist.add(aobj.id);
+        system.debug('aobj'+aobj+'acc id'+aobj.id);
+        createdefaultcon objclass=new  createdefaultcon(acclist);
+        system.enqueueJob(objclass);
+        
+    }
+    
+}
+chaining 1:
+public class createdefaultcon implements Queueable {
+    id getacc;
+    list<id> acclist=new list<id>();
+    public  createdefaultcon(list<id> accid){
+        system.debug('accid'+accid);
+       getacc=accid[0];
+        acclist=accid;
+    }
+    public void execute(QueueableContext qc){
+        Contact cobj=new Contact();
+        cobj.LastName='default test';
+        cobj.AccountId=getacc;
+        insert cobj;
+        system.debug('cobj'+cobj+'cobj id'+cobj.id+'contact account id '+cobj.AccountId);
+        createdefaultopp objopp=new createdefaultopp(acclist);
+        system.enqueueJob(objopp);
+    }
+}
+chaining class 2:
+public class createdefaultopp implements Queueable {
+    id accountID;
+    public createdefaultopp(list<id> accid){
+        system.debug('account id'+accid);
+        accountID=accid[0];
+    }
+    public void execute(system.QueueableContext qc){
+        Opportunity obj=new Opportunity();
+        obj.AccountId=accountID;
+        obj.Name='default test';
+        obj.CloseDate=system.today();
+        obj.StageName='New';
+        insert obj;
+        system.debug('created opportunity'+obj+'oppID'+obj.id);
+    }
+}
