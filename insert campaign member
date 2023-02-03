@@ -11,12 +11,12 @@ public class insertcampaignmem_handler {
     public void insertcammember(list<Lead> newlist){
         list<CampaignMember> newinsertlist=new list<CampaignMember>();
         list<Task> tasklist=new  list<Task>();
-    id campaignnid=[select id,Name from Campaign where Name='sunbun concert'].id;
-      if(campaignnid!=null){
+    Campaign campaignid=[select id,Name from Campaign where Name='sunbun concert'];
+      if(campaignid!=null){
           for(Lead lobj:newlist){
             if(lobj.LeadSource=='Web' ){
                 CampaignMember newmember=new CampaignMember();
-                    newmember.CampaignId=campaignnid;
+                    newmember.CampaignId=campaignid.id;
                     newmember.LeadId=lobj.Id;
                     newmember.Status='ticket taken';
                     newinsertlist.add(newmember);
