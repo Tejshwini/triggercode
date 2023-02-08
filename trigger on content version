@@ -1,0 +1,70 @@
+trigger
+//whenever attachment is added on  contact then that document link and photo
+// should added  on that associated contact record 
+trigger contenversiontr on ContentVersion (after insert) {
+    if(trigger.isafter && trigger.isinsert){
+        ContentVersionhandler.createPublicLinkForFile(trigger.new);
+    }
+}
+
+handler:
+public class ContentVersionhandler {
+    public static void createPublicLinkForFile(List<ContentVersion> contentVersions){
+       list<ContentDistribution> distributionsToInsert = new List<ContentDistribution>();
+        string urlname;
+        id ContentDocument;
+        list<id> conid=new list<id>();
+        for(ContentVersion objContentVersion : contentVersions){
+            if(objContentVersion.FileType.toLowerCase()=='jpg'){
+                ContentDocument=objContentVersion.ContentDocumentId;
+                ContentDistribution newDist = new ContentDistribution();
+                newDist.ContentVersionId = objContentVersion.Id;
+                newDist.Name = 'External Link';
+                newDist.PreferencesNotifyOnVisit = false;
+                newDist.PreferencesAllowViewInBrowser = true;
+                newDist.PreferencesAllowOriginalDownload=true;
+                distributionsToInsert.add(newDist);
+            }
+        }
+        if(!distributionsToInsert.isEmpty())
+        {
+            insert distributionsToInsert;
+            system.debug('distributionsToInsert id'+distributionsToInsert[0].id);
+        }
+         list<ContentDistribution> distributionsurl =[select id, DistributionPublicUrl from ContentDistribution where id=:distributionsToInsert[0].id];
+        system.debug('ddistributionsurl'+distributionsurl);
+        system.debug('ddistributionsurl ContentDocument'+ContentDocument);
+        list<contentdocumentlink> linklist=[select id,LinkedEntityId,contentdocumentid from contentdocumentlink where contentdocumentid=:ContentDocument];
+        system.debug(' ContentDocument linklist'+linklist);
+        if(distributionsurl.size()>0){
+            for(ContentDistribution obj:distributionsurl){
+            urlname=obj.DistributionPublicUrl;
+            system.debug('urlname'+urlname);
+        }
+        }
+        if(linklist.size()>0){
+            system.debug('linklist'+linklist);
+        for(contentdocumentlink linkobj:linklist){
+           conid.add(linkobj.LinkedEntityId);
+        }
+        }
+        system.debug('conid'+conid);
+         list<Contact> updatelist=new list<Contact>();
+        if(!conid.isEmpty()){
+            list<Contact> clist=[select id,lastname,attacmenturl__c from contact where id=:conid];
+        system.debug('clist'+clist);
+            if(clist.size()>0){
+        for(Contact cobj:clist){
+            cobj.attacmenturl__c= urlname;
+            system.debug('cobj'+cobj);
+            updatelist.add(cobj);
+        }
+        }
+       }
+        if(!updatelist.isEmpty()){
+            database.update(updatelist);
+        }
+        system.debug('updatelist'+updatelist);
+    }
+    
+}
